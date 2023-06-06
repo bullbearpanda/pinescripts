@@ -1,0 +1,134 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © bullbearpanda
+
+//@version=5
+indicator('BullBearPanda Trend Progression', overlay=true)
+
+//------------------------------------------------------------------------------
+//-------------------------------------------------------------------- Variables
+//------------------------------------------------------------------------------
+
+tcm = input.float(0.3, title="Trend Change Minimum", minval=0.1, maxval=1.0)
+
+fast_period = input.int(200, "Fast Period EMA")
+slow_period = input.int(200, "Slow Period SMA")
+
+fast = ta.ema(close, fast_period)
+slow = ta.sma(close, slow_period)
+
+var peak = 0.0
+var trend = 'Neutral'
+var invalidation = 0.0
+
+var line level = na
+
+//------------------------------------------------------------------------------
+//-------------------------------------------------------------- Candle Analysis
+//------------------------------------------------------------------------------
+
+// bullEngulfing = close > high[1] and low < low[1]
+// bearEngulfing = close < low[1] and high > high[1]
+
+// candle_range = (high - low) / 3
+// high_close = close <= high and (high - candle_range) < close
+// low_close = close >= low and (low + candle_range) > close
+// mid_close = (high - candle_range) > close and (low + candle_range) < close
+
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------ Trend Logic
+//------------------------------------------------------------------------------
+
+//TODO: Move invalidation when wicks occur
+//TODO: Make it so that trend change requires significant moves (maybe 20% of the original impulse)
+//TODO: Mark the relevant levels on the chart
+
+if trend == 'Neutral'
+    if close > high[1]
+        trend := 'Bullish'
+
+        peak := high
+        invalidation := low
+
+    if close < low[1]
+        trend := 'Bearish'
+
+        peak := low
+        invalidation := high
+
+else if trend == 'Sideways'
+    if peak > invalidation // Bullish Sideways
+        significant = invalidation - (ta.tr * tcm)
+
+        // Trend Change
+        if close < significant
+            trend := 'Bearish'
+            peak := low
+            invalidation := high
+        // Trend Continuation
+        else if close > peak
+            trend := 'Bullish'
+            peak := high
+            invalidation := low
+    else if peak < invalidation // Bearish Sideways
+        significant = invalidation + (ta.tr * tcm)
+
+        // Trend Change
+        if close > significant
+            trend := 'Bullish'
+            peak := high
+            invalidation := low
+        // Trend Continuation
+        else if close < peak
+            trend := 'Bearish'
+            peak := low
+            invalidation := high
+
+else if trend == 'Bullish'
+    if close < invalidation
+        trend := 'Bearish'
+
+        peak := low
+        invalidation := high
+
+    else if close > peak
+        peak := high
+        invalidation := low
+    
+    else
+        trend := 'Sideways'
+
+else if trend == 'Bearish'
+    if close > invalidation
+        trend := 'Bullish'
+
+        peak := high
+        invalidation := low
+
+    else if close < peak
+        peak := low
+        invalidation := high
+
+    else
+        trend := 'Sideways'
+        
+// line.set_x2(level, bar_index)
+//         level := line.new(bar_index, invalidation, bar_index, invalidation, color=color.green, style=line.style_dashed, width=1, extend=extend.none)
+//         level
+
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------ Plots
+//------------------------------------------------------------------------------
+
+if not na(level) and line.get_x2(level) != bar_index
+    line.set_x2(level, bar_index)
+
+barclr = trend == 'Sideways' ? color.gray : trend == 'Bullish' ? color.green : color.red
+barcolor(barclr)
+
+plot(peak, color=color.green)
+plot(invalidation, color=color.red)
+
+// fast_avg = plot(fast, color = color.silver)
+// slow_avg = plot(slow, color = color.white)
+// fill_clr = fast > slow ? color.new(color.green, 75) : color.new(color.red, 75)
+// fill(fast_avg, slow_avg, color = fill_clr)
