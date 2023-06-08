@@ -65,47 +65,50 @@ if trend == 'Neutral'
 
 else if trend == 'Sideways'
     if peak > invalidation // Bullish Sideways
-        significant = invalidation - (true_range * tcm)
+        significant_invalidation = invalidation - (true_range * tcm)
+        significant_peak = peak + (true_range * tcm)
 
         // Trend Change
-        if close < significant
+        if close < significant_invalidation
             trend := 'Bearish'
             peak := low
             invalidation := high
             true_range := ta.tr
         // Trend Continuation
-        else if close > peak
+        else if close > significant_peak
             trend := 'Bullish'
             peak := high
             invalidation := low
-            true_range := ta.tr // Maybe not...
+            true_range := ta.tr
     else if peak < invalidation // Bearish Sideways
-        significant = invalidation + (true_range * tcm)
+        significant_invalidation = invalidation + (true_range * tcm)
+        significant_peak = peak - (true_range * tcm)
 
         // Trend Change
-        if close > significant
+        if close > significant_invalidation
             trend := 'Bullish'
             peak := high
             invalidation := low
             true_range := ta.tr
         // Trend Continuation
-        else if close < peak
+        else if close < significant_peak
             trend := 'Bearish'
             peak := low
             invalidation := high
-            true_range := ta.tr // Maybe not...
+            true_range := ta.tr
 
 else if trend == 'Bullish'
-    significant = invalidation - (true_range * tcm)
+    significant_invalidation = invalidation - (true_range * tcm)
+    significant_peak = peak + (true_range * tcm)
 
-    if close < significant
+    if close < significant_invalidation
         trend := 'Bearish'
 
         peak := low
         invalidation := high
         true_range := ta.tr
 
-    else if close > peak
+    else if close > significant_peak
         peak := high
         invalidation := low
         true_range := ta.tr // Maybe not...
@@ -114,16 +117,17 @@ else if trend == 'Bullish'
         trend := 'Sideways'
 
 else if trend == 'Bearish'
-    significant = invalidation + (true_range * tcm)
+    significant_invalidation = invalidation + (true_range * tcm)
+    significant_peak = peak - (true_range * tcm)
 
-    if close > significant
+    if close > significant_invalidation
         trend := 'Bullish'
 
         peak := high
         invalidation := low
         true_range := ta.tr
 
-    else if close < peak
+    else if close < significant_peak
         peak := low
         invalidation := high
         true_range := ta.tr // Maybe not...
