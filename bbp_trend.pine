@@ -16,18 +16,27 @@ slow_period = input.int(200, "Slow Period SMA")
 fast = ta.ema(close, fast_period)
 slow = ta.sma(close, slow_period)
 
-var peak = 0.0
-var trend = 'Neutral'
-var invalidation = 0.0
-var true_range = 0.0
+IDX_PEAK = 0
+IDX_INVAL = 1
+IDX_TR = 2
 
+var metrics = array.new_float(3, 0.0)
+var trend = 'Neutral'
 var line level = na
 
 //------------------------------------------------------------------------------
 //---------------------------------------------------------------------- Utility
 //------------------------------------------------------------------------------
 
+to_bullish() =>
+    array.set(metrics, IDX_PEAK, high)
+    array.set(metrics, IDX_INVAL, low)
+    array.set(metrics, IDX_TR, ta.tr)
 
+to_bearish() =>
+    array.set(metrics, IDX_PEAK, low)
+    array.set(metrics, IDX_INVAL, high)
+    array.set(metrics, IDX_TR, ta.tr)
 
 //------------------------------------------------------------------------------
 //-------------------------------------------------------------- Candle Analysis
@@ -47,90 +56,73 @@ var line level = na
 
 //TODO: Move invalidation when wicks occur
 //TODO: Mark the relevant levels on the chart
+//TODO: Maybe look into filtering big impulses based on atr
+//TODO: Consider adding logic to handle reclaims/fakeouts
+//TODO: Check if it makes sense to include candle analysis into the trend change decision
+
+peak = array.get(metrics, IDX_PEAK)
+inval = array.get(metrics, IDX_INVAL)
+true_range = array.get(metrics, IDX_TR)
 
 if trend == 'Neutral'
     if close > high[1]
         trend := 'Bullish'
-
-        peak := high
-        invalidation := low
-        true_range := ta.tr
+        to_bullish()
 
     if close < low[1]
         trend := 'Bearish'
-
-        peak := low
-        invalidation := high
-        true_range := ta.tr
+        to_bearish()
 
 else if trend == 'Sideways'
-    if peak > invalidation // Bullish Sideways
-        significant_invalidation = invalidation - (true_range * tcm)
+    if peak > inval // Bullish Sideways
+        significant_inval = inval - (true_range * tcm)
         significant_peak = peak + (true_range * tcm)
 
         // Trend Change
-        if close < significant_invalidation
+        if close < significant_inval
             trend := 'Bearish'
-            peak := low
-            invalidation := high
-            true_range := ta.tr
+            to_bearish()
         // Trend Continuation
         else if close > significant_peak
             trend := 'Bullish'
-            peak := high
-            invalidation := low
-            true_range := ta.tr
-    else if peak < invalidation // Bearish Sideways
-        significant_invalidation = invalidation + (true_range * tcm)
+            to_bullish()
+    else if peak < inval // Bearish Sideways
+        significant_inval = inval + (true_range * tcm)
         significant_peak = peak - (true_range * tcm)
 
         // Trend Change
-        if close > significant_invalidation
+        if close > significant_inval
             trend := 'Bullish'
-            peak := high
-            invalidation := low
-            true_range := ta.tr
+            to_bullish()
         // Trend Continuation
         else if close < significant_peak
             trend := 'Bearish'
-            peak := low
-            invalidation := high
-            true_range := ta.tr
+            to_bearish()
 
 else if trend == 'Bullish'
-    significant_invalidation = invalidation - (true_range * tcm)
+    significant_inval = inval - (true_range * tcm)
     significant_peak = peak + (true_range * tcm)
 
-    if close < significant_invalidation
+    if close < significant_inval
         trend := 'Bearish'
-
-        peak := low
-        invalidation := high
-        true_range := ta.tr
+        to_bearish()
 
     else if close > significant_peak
-        peak := high
-        invalidation := low
-        true_range := ta.tr // Maybe not...
+        to_bullish()
     
     else
         trend := 'Sideways'
 
 else if trend == 'Bearish'
-    significant_invalidation = invalidation + (true_range * tcm)
+    significant_inval = inval + (true_range * tcm)
     significant_peak = peak - (true_range * tcm)
 
-    if close > significant_invalidation
+    if close > significant_inval
         trend := 'Bullish'
-
-        peak := high
-        invalidation := low
-        true_range := ta.tr
+        to_bullish()
 
     else if close < significant_peak
-        peak := low
-        invalidation := high
-        true_range := ta.tr // Maybe not...
+        to_bearish()
 
     else
         trend := 'Sideways'
@@ -150,7 +142,7 @@ barclr = trend == 'Sideways' ? color.gray : trend == 'Bullish' ? color.green : c
 barcolor(barclr)
 
 plot(peak, color=color.green)
-plot(invalidation, color=color.red)
+plot(inval, color=color.red)
 
 // fast_avg = plot(fast, color = color.silver)
 // slow_avg = plot(slow, color = color.white)
