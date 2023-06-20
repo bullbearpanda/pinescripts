@@ -2,7 +2,7 @@
 // © bullbearpanda
 
 //@version=5
-indicator('BullBearPanda Trend Progression', overlay=true)
+indicator('BullBearPanda Bar Trend', overlay=true)
 
 //------------------------------------------------------------------------------
 //-------------------------------------------------------------------- Variables
@@ -19,8 +19,10 @@ slow = ta.sma(close, slow_period)
 IDX_PEAK = 0
 IDX_INVAL = 1
 IDX_TR = 2
+IDX_HIGHEST = 3
+IDX_LOWEST = 4
 
-var metrics = array.new_float(3, 0.0)
+var metrics = array.new_float(5, 0.0)
 var trend = 'Neutral'
 var line level = na
 
@@ -28,15 +30,25 @@ var line level = na
 //---------------------------------------------------------------------- Utility
 //------------------------------------------------------------------------------
 
+set_highest(value) =>
+    array.set(metrics, IDX_HIGHEST, value)
+
+set_lowest(value) =>
+    array.set(metrics, IDX_LOWEST, value)
+
 to_bullish() =>
     array.set(metrics, IDX_PEAK, high)
     array.set(metrics, IDX_INVAL, low)
     array.set(metrics, IDX_TR, ta.tr)
+    set_highest(high)
+    set_lowest(low)
 
 to_bearish() =>
     array.set(metrics, IDX_PEAK, low)
     array.set(metrics, IDX_INVAL, high)
     array.set(metrics, IDX_TR, ta.tr)
+    set_highest(high)
+    set_lowest(low)
 
 //------------------------------------------------------------------------------
 //-------------------------------------------------------------- Candle Analysis
@@ -63,6 +75,8 @@ to_bearish() =>
 peak = array.get(metrics, IDX_PEAK)
 inval = array.get(metrics, IDX_INVAL)
 true_range = array.get(metrics, IDX_TR)
+highest = array.get(metrics, IDX_HIGHEST)
+lowest = array.get(metrics, IDX_LOWEST)
 
 if trend == 'Neutral'
     if close > high[1]
@@ -79,25 +93,35 @@ else if trend == 'Sideways'
         significant_peak = peak + (true_range * tcm)
 
         // Trend Change
-        if close < significant_inval
+        if close < significant_inval and close < lowest
             trend := 'Bearish'
             to_bearish()
         // Trend Continuation
-        else if close > significant_peak
+        else if close > significant_peak and close > highest
             trend := 'Bullish'
             to_bullish()
+        // Spikes into Peak and Inval
+        else if high > peak and high > highest
+            set_highest(high)
+        else if low < inval and low < lowest
+            set_lowest(low)
     else if peak < inval // Bearish Sideways
         significant_inval = inval + (true_range * tcm)
         significant_peak = peak - (true_range * tcm)
 
         // Trend Change
-        if close > significant_inval
+        if close > significant_inval and close > highest
             trend := 'Bullish'
             to_bullish()
         // Trend Continuation
-        else if close < significant_peak
+        else if close < significant_peak and close < lowest
             trend := 'Bearish'
             to_bearish()
+        // Spikes into Peak and Inval
+        else if high > inval and high > highest
+            set_highest(high)
+        else if low < peak and low < lowest
+            set_lowest(low)
 
 else if trend == 'Bullish'
     significant_inval = inval - (true_range * tcm)
@@ -128,7 +152,7 @@ else if trend == 'Bearish'
         trend := 'Sideways'
         
 // line.set_x2(level, bar_index)
-//         level := line.new(bar_index, invalidation, bar_index, invalidation, color=color.green, style=line.style_dashed, width=1, extend=extend.none)
+//         level := line.new(bar_index, inval, bar_index, inval, color=color.green, style=line.style_dashed, width=1, extend=extend.none)
 //         level
 
 //------------------------------------------------------------------------------
@@ -141,10 +165,11 @@ if not na(level) and line.get_x2(level) != bar_index
 barclr = trend == 'Sideways' ? color.gray : trend == 'Bullish' ? color.green : color.red
 barcolor(barclr)
 
+// Temporary for Debug
 plot(peak, color=color.green)
 plot(inval, color=color.red)
 
-// fast_avg = plot(fast, color = color.silver)
-// slow_avg = plot(slow, color = color.white)
-// fill_clr = fast > slow ? color.new(color.green, 75) : color.new(color.red, 75)
-// fill(fast_avg, slow_avg, color = fill_clr)
+fast_avg = plot(fast, color = color.silver)
+slow_avg = plot(slow, color = color.white)
+fill_clr = fast > slow ? color.new(color.green, 75) : color.new(color.red, 75)
+fill(fast_avg, slow_avg, color = fill_clr)
