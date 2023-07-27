@@ -1,0 +1,14 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © bullbearpanda
+// github.com/bullbearpanda
+// twitter.com/bullbearpanda
+
+//@version=5
+indicator("Panda BacktestHelper", overlay = true, max_lines_count = 500)
+
+isNewDay = timeframe.change("D")
+isNewWeek = timeframe.change("W")
+
+if (isNewWeek)
+    line.new(bar_index, close, bar_index, close * 1.05, extend = extend.both, color = color.blue, style = line.style_solid, width = 1)  // Vertical
+    line.new(bar_index, open, bar_index + 24, open, color = color.yellow, style = line.style_dashed, width = 1)                         // Horizontal
