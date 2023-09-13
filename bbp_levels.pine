@@ -1,0 +1,33 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © bullbearpanda
+// github.com/bullbearpanda
+// twitter.com/bullbearpanda
+
+//@version=5
+indicator("Panda Levels", overlay = false, max_lines_count = 500)
+
+//------------------------------------------------------------------------------
+//-------------------------------------------------------------------- Variables
+//------------------------------------------------------------------------------
+
+america = "0930-1600:23456"         // America/New York
+europe = "0800-1630:23456"          // Europe/London
+asia_morning = "0900-1130:23456"    // Asia/Tokyo (Morning Session)
+asia_afternoon = "1230-1500:23456"  // Asia/Tokyo (Afternoon Session)
+
+[wo, wc, wh, wl] = request.security(syminfo.tickerid, "W", [open, close, high, low])
+[do, dc, dh, dl] = request.security(syminfo.tickerid, "D", [open, close, high, low])
+
+//------------------------------------------------------------------------------
+//-------------------------------------------------------------------- Utilities
+//------------------------------------------------------------------------------
+
+timeinrange(res, sess, tz) => not na(time(res, sess, tz)) ? 1 : 0
+
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------- Plot
+//------------------------------------------------------------------------------
+
+plot(timeinrange(timeframe.period, europe, "Europe/London"), color=color.blue)
+plot(timeinrange(timeframe.period, america, "America/New_York"), color=color.red)
+plot(timeinrange(timeframe.period, asia_morning, "Asia/Tokyo") or timeinrange(timeframe.period, asia_afternoon, "Asia/Tokyo") ? 1 : 0, color=color.yellow)
