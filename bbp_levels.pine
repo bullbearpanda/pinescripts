@@ -10,7 +10,8 @@ indicator("Panda Levels", overlay = false, max_lines_count = 500)
 //-------------------------------------------------------------------- Variables
 //------------------------------------------------------------------------------
 
-america = "0930-1600:23456"         // America/New York
+forex = "0800-1700:23456"           // America/New_York
+america = "0930-1600:23456"         // America/New_York
 europe = "0800-1630:23456"          // Europe/London
 asia_morning = "0900-1130:23456"    // Asia/Tokyo (Morning Session)
 asia_afternoon = "1230-1500:23456"  // Asia/Tokyo (Afternoon Session)
@@ -22,12 +23,18 @@ asia_afternoon = "1230-1500:23456"  // Asia/Tokyo (Afternoon Session)
 //-------------------------------------------------------------------- Utilities
 //------------------------------------------------------------------------------
 
-timeinrange(res, sess, tz) => not na(time(res, sess, tz)) ? 1 : 0
+timeinrange(res, sess, tz) => not na(time(res, sess, tz))
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------- Plot
 //------------------------------------------------------------------------------
 
-plot(timeinrange(timeframe.period, europe, "Europe/London"), color=color.blue)
-plot(timeinrange(timeframe.period, america, "America/New_York"), color=color.red)
-plot(timeinrange(timeframe.period, asia_morning, "Asia/Tokyo") or timeinrange(timeframe.period, asia_afternoon, "Asia/Tokyo") ? 1 : 0, color=color.yellow)
+session_forex = timeinrange(timeframe.period, forex, "America/New_York") and syminfo.type == "forex" ? 1 : 0
+session_europe = timeinrange(timeframe.period, europe, "Europe/London") ? 1 : 0
+session_america = timeinrange(timeframe.period, america, "America/New_York") ? 1 : 0
+session_asia = timeinrange(timeframe.period, asia_morning, "Asia/Tokyo") or timeinrange(timeframe.period, asia_afternoon, "Asia/Tokyo") ? 1 : 0
+
+plot(session_forex, color=color.lime)
+plot(session_europe, color=color.blue)
+plot(session_america, color=color.red)
+plot(session_asia, color=color.yellow)
