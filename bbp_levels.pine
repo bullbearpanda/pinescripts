@@ -4,7 +4,13 @@
 // twitter.com/bullbearpanda
 
 //@version=5
-indicator("Panda Levels", overlay = false, max_lines_count = 500)
+indicator("Panda Levels", overlay = true, max_lines_count = 500)
+
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------ Input
+//------------------------------------------------------------------------------
+
+
 
 //------------------------------------------------------------------------------
 //-------------------------------------------------------------------- Variables
@@ -16,8 +22,14 @@ europe = "0800-1630:23456"          // Europe/London
 asia_morning = "0900-1130:23456"    // Asia/Tokyo (Morning Session)
 asia_afternoon = "1230-1500:23456"  // Asia/Tokyo (Afternoon Session)
 
-[wo, wc, wh, wl] = request.security(syminfo.tickerid, "W", [open, close, high, low])
-[do, dc, dh, dl] = request.security(syminfo.tickerid, "D", [open, close, high, low])
+// [wo, wc, wh, wl] = request.security(syminfo.tickerid, "W", [open, close, high, low])
+// [do, dc, dh, dl] = request.security(syminfo.tickerid, "D", [open, close, high, low])
+
+var baridx = 0
+var high_day = 0
+var low_day = 0
+var week_high = 0
+var week_low = 0
 
 //------------------------------------------------------------------------------
 //-------------------------------------------------------------------- Utilities
@@ -26,15 +38,39 @@ asia_afternoon = "1230-1500:23456"  // Asia/Tokyo (Afternoon Session)
 timeinrange(res, sess, tz) => not na(time(res, sess, tz))
 
 //------------------------------------------------------------------------------
-//------------------------------------------------------------------------- Plot
+//----------------------------------------------------------------- Calculations
 //------------------------------------------------------------------------------
 
-session_forex = timeinrange(timeframe.period, forex, "America/New_York") and syminfo.type == "forex" ? 1 : 0
-session_europe = timeinrange(timeframe.period, europe, "Europe/London") ? 1 : 0
-session_america = timeinrange(timeframe.period, america, "America/New_York") ? 1 : 0
-session_asia = timeinrange(timeframe.period, asia_morning, "Asia/Tokyo") or timeinrange(timeframe.period, asia_afternoon, "Asia/Tokyo") ? 1 : 0
+isNewDay = timeframe.change("D")
+isNewWeek = timeframe.change("W")
 
-plot(session_forex, color=color.lime)
-plot(session_europe, color=color.blue)
-plot(session_america, color=color.red)
-plot(session_asia, color=color.yellow)
+session_forex = timeinrange(timeframe.period, forex, "America/New_York") and syminfo.type == "forex"
+session_europe = timeinrange(timeframe.period, europe, "Europe/London")
+session_america = timeinrange(timeframe.period, america, "America/New_York")
+session_asia = timeinrange(timeframe.period, asia_morning, "Asia/Tokyo") or timeinrange(timeframe.period, asia_afternoon, "Asia/Tokyo")
+
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------ Plots
+//------------------------------------------------------------------------------
+
+var line line_daily = na
+var line line_weekly = na
+
+if isNewDay
+    if not na(line_daily)
+        line_daily.set_extend(extend.none)
+        line_daily.set_x2(bar_index)
+    line_daily := line.new(bar_index, open, bar_index + 1, open, extend = extend.right, color = color.aqua)
+
+if isNewWeek
+    if not na(line_weekly)
+        line_weekly.set_extend(extend.none)
+        line_weekly.set_x2(bar_index)
+    line_weekly := line.new(bar_index, open, bar_index + 1, open, extend = extend.right, color = color.purple)
+
+var line line_america = na
+
+if session_america and not session_america[1]
+    line_america := line.new(bar_index, open, bar_index + 1, open, color = color.lime, style = line.style_dashed, width = 1)
+else if ((not session_america and session_america[1]) or session_america) and not na(line_america)
+    line_america.set_x2(bar_index)
