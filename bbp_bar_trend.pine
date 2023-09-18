@@ -10,7 +10,7 @@ indicator('Panda Bar Trend', overlay=true)
 //-------------------------------------------------------------------- Variables
 //------------------------------------------------------------------------------
 
-tcm = input.float(0.3, title="Trend Change Minimum", minval=0.1, maxval=1.0)
+tcm = input.float(0.3, title="Trend Change Minimum", minval=0.1, maxval=1.0, step = 0.1)
 
 fast_period = input.int(200, "Fast Period EMA")
 slow_period = input.int(200, "Slow Period SMA")
@@ -26,7 +26,6 @@ IDX_LOWEST = 4
 
 var metrics = array.new_float(5, 0.0)
 var trend = 'Neutral'
-var line level = na
 
 //------------------------------------------------------------------------------
 //---------------------------------------------------------------------- Utility
@@ -56,13 +55,10 @@ to_bearish() =>
 //-------------------------------------------------------------- Candle Analysis
 //------------------------------------------------------------------------------
 
-// bullEngulfing = close > high[1] and low < low[1]
-// bearEngulfing = close < low[1] and high > high[1]
-
-// candle_range = (high - low) / 3
-// high_close = close <= high and (high - candle_range) < close
-// low_close = close >= low and (low + candle_range) > close
-// mid_close = (high - candle_range) > close and (low + candle_range) < close
+candle_range = (high - low) / 3
+high_close = close <= high and (high - candle_range) < close
+low_close = close >= low and (low + candle_range) > close
+mid_close = (high - candle_range) > close and (low + candle_range) < close
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------ Trend Logic
@@ -72,7 +68,6 @@ to_bearish() =>
 //TODO: Mark the relevant levels on the chart
 //TODO: Maybe look into filtering big impulses based on atr
 //TODO: Consider adding logic to handle reclaims/fakeouts
-//TODO: Check if it makes sense to include candle analysis into the trend change decision
 
 peak = array.get(metrics, IDX_PEAK)
 inval = array.get(metrics, IDX_INVAL)
@@ -95,11 +90,11 @@ else if trend == 'Sideways'
         significant_peak = peak + (true_range * tcm)
 
         // Trend Change
-        if close < significant_inval and close < lowest
+        if close < significant_inval and close < lowest and low_close
             trend := 'Bearish'
             to_bearish()
         // Trend Continuation
-        else if close > significant_peak and close > highest
+        else if close > significant_peak and close > highest and high_close
             trend := 'Bullish'
             to_bullish()
         // Spikes into Peak and Inval
@@ -112,11 +107,11 @@ else if trend == 'Sideways'
         significant_peak = peak - (true_range * tcm)
 
         // Trend Change
-        if close > significant_inval and close > highest
+        if close > significant_inval and close > highest and high_close
             trend := 'Bullish'
             to_bullish()
         // Trend Continuation
-        else if close < significant_peak and close < lowest
+        else if close < significant_peak and close < lowest and low_close
             trend := 'Bearish'
             to_bearish()
         // Spikes into Peak and Inval
@@ -129,11 +124,11 @@ else if trend == 'Bullish'
     significant_inval = inval - (true_range * tcm)
     significant_peak = peak + (true_range * tcm)
 
-    if close < significant_inval
+    if close < significant_inval and low_close
         trend := 'Bearish'
         to_bearish()
 
-    else if close > significant_peak
+    else if close > significant_peak and high_close
         to_bullish()
     
     else
@@ -143,26 +138,19 @@ else if trend == 'Bearish'
     significant_inval = inval + (true_range * tcm)
     significant_peak = peak - (true_range * tcm)
 
-    if close > significant_inval
+    if close > significant_inval and high_close
         trend := 'Bullish'
         to_bullish()
 
-    else if close < significant_peak
+    else if close < significant_peak and low_close
         to_bearish()
 
     else
         trend := 'Sideways'
-        
-// line.set_x2(level, bar_index)
-//         level := line.new(bar_index, inval, bar_index, inval, color=color.green, style=line.style_dashed, width=1, extend=extend.none)
-//         level
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------ Plots
 //------------------------------------------------------------------------------
-
-if not na(level) and line.get_x2(level) != bar_index
-    line.set_x2(level, bar_index)
 
 barclr = trend == 'Sideways' ? color.gray : trend == 'Bullish' ? color.green : color.red
 barcolor(barclr)
