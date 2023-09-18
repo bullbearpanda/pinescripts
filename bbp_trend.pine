@@ -4,7 +4,7 @@
 // twitter.com/bullbearpanda
 
 //@version=5
-indicator('Panda Bar Trend', overlay=true)
+indicator('Panda Trend', overlay=true)
 
 //------------------------------------------------------------------------------
 //-------------------------------------------------------------------- Variables
