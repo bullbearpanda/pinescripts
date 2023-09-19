@@ -13,33 +13,28 @@ indicator("Panda Levels", overlay = true, max_lines_count = 500)
 plotDaily = input.bool(true, "Plot Daily Open")
 plotWeekly = input.bool(true, "Plot Weekly Open")
 
-//------------------------------------------------------------------------------
-//-------------------------------------------------------------------- Variables
-//------------------------------------------------------------------------------
-
-forex = "0800-1700:23456"           // America/New_York
-america = "0930-1600:23456"         // America/New_York
-europe = "0800-1630:23456"          // Europe/London
-asia_morning = "0900-1130:23456"    // Asia/Tokyo (Morning Session)
-asia_afternoon = "1230-1500:23456"  // Asia/Tokyo (Afternoon Session)
+forex = input.session("0800-1700:23456", "Forex Session")       // America/New_York
+america = input.session("0930-1600:23456", "US Session")        // America/New_York
+europe = input.session("0800-1630:23456", "EU Session")         // Europe/London
+asia = input.session("0900-1500:23456", "Asia Session")         // Asia/Tokyo
 
 //------------------------------------------------------------------------------
 //-------------------------------------------------------------------- Utilities
 //------------------------------------------------------------------------------
 
-timeinrange(res, sess, tz) => not na(time(res, sess, tz))
-
-//------------------------------------------------------------------------------
-//----------------------------------------------------------------- Calculations
-//------------------------------------------------------------------------------
-
 isNewDay = timeframe.change("D")
 isNewWeek = timeframe.change("W")
 
+timeinrange(res, sess, tz) => not na(time(res, sess, tz))
+
+//------------------------------------------------------------------------------
+//-------------------------------------------------------------------- Variables
+//------------------------------------------------------------------------------
+
 session_forex = timeinrange(timeframe.period, forex, "America/New_York") and syminfo.type == "forex"
 session_europe = timeinrange(timeframe.period, europe, "Europe/London")
-session_america = timeinrange(timeframe.period, america, "America/New_York")
-session_asia = timeinrange(timeframe.period, asia_morning, "Asia/Tokyo") or timeinrange(timeframe.period, asia_afternoon, "Asia/Tokyo")
+session_america = timeinrange(timeframe.period, america, "America/New_York") and not (syminfo.type == "forex")
+session_asia = timeinrange(timeframe.period, asia, "Asia/Tokyo")
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------ Plots
