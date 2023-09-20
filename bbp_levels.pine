@@ -45,6 +45,7 @@ var line line_weekly = na
 
 var line line_america = na
 var line line_europe = na
+var line line_asia = na
 
 if isNewWeek and plotWeekly
     if not na(line_weekly)
@@ -68,3 +69,8 @@ if timeframe.isintraday
         line_europe := line.new(bar_index, open, bar_index + 1, open, color = color.fuchsia, style = line.style_dashed, width = 1)
     else if ((not session_europe and session_europe[1]) or session_europe) and not na(line_europe)
         line_europe.set_x2(bar_index)
+
+    if session_asia and not session_asia[1]
+        line_asia := line.new(bar_index, open, bar_index + 1, open, color = color.yellow, style = line.style_dashed, width = 1)
+    else if ((not session_asia and session_asia[1]) or session_asia) and not na(line_asia)
+        line_asia.set_x2(bar_index)
