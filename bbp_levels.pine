@@ -51,22 +51,22 @@ if isNewWeek and plotWeekly
     if not na(line_weekly)
         line_weekly.set_extend(extend.none)
         line_weekly.set_x2(bar_index)
-    line_weekly := line.new(bar_index, open, bar_index + 1, open, extend = extend.right, color = color.purple, width = 2)
+    line_weekly := line.new(bar_index, open, bar_index + 1, open, extend = extend.right, color = color.rgb(217, 0, 255), style = line.style_dotted, width = 2)
 
 if timeframe.isintraday
     if isNewDay and dayofweek != dayofweek.monday and plotDaily
         if not na(line_daily)
             line_daily.set_extend(extend.none)
             line_daily.set_x2(bar_index)
-        line_daily := line.new(bar_index, open, bar_index + 1, open, extend = extend.right, color = color.aqua, width = 1)
+        line_daily := line.new(bar_index, open, bar_index + 1, open, extend = extend.right, color = color.rgb(217, 0, 255, 25), style = line.style_dotted, width = 1)
 
     if session_america and not session_america[1]
-        line_america := line.new(bar_index, open, bar_index + 1, open, color = color.lime, style = line.style_dashed, width = 1)
+        line_america := line.new(bar_index, open, bar_index + 1, open, color = color.red, style = line.style_dashed, width = 1)
     else if ((not session_america and session_america[1]) or session_america) and not na(line_america)
         line_america.set_x2(bar_index)
 
     if session_europe and not session_europe[1]
-        line_europe := line.new(bar_index, open, bar_index + 1, open, color = color.fuchsia, style = line.style_dashed, width = 1)
+        line_europe := line.new(bar_index, open, bar_index + 1, open, color = color.blue, style = line.style_dashed, width = 1)
     else if ((not session_europe and session_europe[1]) or session_europe) and not na(line_europe)
         line_europe.set_x2(bar_index)
 
