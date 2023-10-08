@@ -54,11 +54,12 @@ if isNewWeek and plotWeekly
     line_weekly := line.new(bar_index, open, bar_index + 1, open, extend = extend.right, color = color.rgb(217, 0, 255), style = line.style_dotted, width = 2)
 
 if timeframe.isintraday
-    if isNewDay and dayofweek != dayofweek.monday and plotDaily
-        if not na(line_daily)
+    if isNewDay and plotDaily
+        if not na(line_daily) and dayofweek != dayofweek.tuesday
             line_daily.set_extend(extend.none)
             line_daily.set_x2(bar_index)
-        line_daily := line.new(bar_index, open, bar_index + 1, open, extend = extend.right, color = color.rgb(217, 0, 255, 25), style = line.style_dotted, width = 1)
+        if dayofweek != dayofweek.monday
+            line_daily := line.new(bar_index, open, bar_index + 1, open, extend = extend.right, color = color.rgb(217, 0, 255, 25), style = line.style_dotted, width = 1)
 
     if session_forex and not session_forex[1]
         line_america := line.new(bar_index, open, bar_index + 1, open, color = color.red, style = line.style_dashed, width = 1)
