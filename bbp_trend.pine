@@ -4,13 +4,14 @@
 // twitter.com/bullbearpanda
 
 //@version=5
-indicator('Panda Trend', overlay=true)
+indicator("Panda Trend", overlay = true)
+import TradingView/ta/7
 
 //------------------------------------------------------------------------------
 //-------------------------------------------------------------------- Variables
 //------------------------------------------------------------------------------
 
-tcm = input.float(0.3, title="Trend Change Minimum", minval=0.1, maxval=1.0, step = 0.1)
+tcm = input.float(0.5, title="Impulse Strength", minval=0.1, maxval=1.0, step = 0.1)
 
 fast_period = input.int(200, "Fast Period EMA")
 slow_period = input.int(200, "Slow Period SMA")
@@ -18,148 +19,42 @@ slow_period = input.int(200, "Slow Period SMA")
 fast = ta.ema(close, fast_period)
 slow = ta.sma(close, slow_period)
 
-IDX_PEAK = 0
-IDX_INVAL = 1
-IDX_TR = 2
-IDX_HIGHEST = 3
-IDX_LOWEST = 4
-
-var metrics = array.new_float(5, 0.0)
-var trend = 'Neutral'
+atr = ta.atr(10)
 
 //------------------------------------------------------------------------------
 //---------------------------------------------------------------------- Utility
 //------------------------------------------------------------------------------
 
-set_highest(value) =>
-    array.set(metrics, IDX_HIGHEST, value)
 
-set_lowest(value) =>
-    array.set(metrics, IDX_LOWEST, value)
-
-to_bullish() =>
-    array.set(metrics, IDX_PEAK, high)
-    array.set(metrics, IDX_INVAL, low)
-    array.set(metrics, IDX_TR, ta.tr)
-    set_highest(high)
-    set_lowest(low)
-
-to_bearish() =>
-    array.set(metrics, IDX_PEAK, low)
-    array.set(metrics, IDX_INVAL, high)
-    array.set(metrics, IDX_TR, ta.tr)
-    set_highest(high)
-    set_lowest(low)
 
 //------------------------------------------------------------------------------
 //-------------------------------------------------------------- Candle Analysis
 //------------------------------------------------------------------------------
 
-candle_range = (high - low) / 3
+significant_candle = ta.tr > (atr + (atr * tcm))
+
+candle_range = (high - low) / 4
 high_close = close <= high and (high - candle_range) < close
 low_close = close >= low and (low + candle_range) > close
 mid_close = (high - candle_range) > close and (low + candle_range) < close
+
+bullish_impulse = high_close and significant_candle
+bearish_impulse = low_close and significant_candle
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------ Trend Logic
 //------------------------------------------------------------------------------
 
-//TODO: Move invalidation when wicks occur
-//TODO: Mark the relevant levels on the chart
-//TODO: Maybe look into filtering big impulses based on atr
-//TODO: Consider adding logic to handle reclaims/fakeouts
 
-peak = array.get(metrics, IDX_PEAK)
-inval = array.get(metrics, IDX_INVAL)
-true_range = array.get(metrics, IDX_TR)
-highest = array.get(metrics, IDX_HIGHEST)
-lowest = array.get(metrics, IDX_LOWEST)
-
-if trend == 'Neutral'
-    if close > high[1]
-        trend := 'Bullish'
-        to_bullish()
-
-    if close < low[1]
-        trend := 'Bearish'
-        to_bearish()
-
-else if trend == 'Sideways'
-    if peak > inval // Bullish Sideways
-        significant_inval = inval - (true_range * tcm)
-        significant_peak = peak + (true_range * tcm)
-
-        // Trend Change
-        if close < significant_inval and close < lowest and low_close
-            trend := 'Bearish'
-            to_bearish()
-        // Trend Continuation
-        else if close > significant_peak and close > highest and high_close
-            trend := 'Bullish'
-            to_bullish()
-        // Spikes into Peak and Inval
-        else if high > peak and high > highest
-            set_highest(high)
-        else if low < inval and low < lowest
-            set_lowest(low)
-    else if peak < inval // Bearish Sideways
-        significant_inval = inval + (true_range * tcm)
-        significant_peak = peak - (true_range * tcm)
-
-        // Trend Change
-        if close > significant_inval and close > highest and high_close
-            trend := 'Bullish'
-            to_bullish()
-        // Trend Continuation
-        else if close < significant_peak and close < lowest and low_close
-            trend := 'Bearish'
-            to_bearish()
-        // Spikes into Peak and Inval
-        else if high > inval and high > highest
-            set_highest(high)
-        else if low < peak and low < lowest
-            set_lowest(low)
-
-else if trend == 'Bullish'
-    significant_inval = inval - (true_range * tcm)
-    significant_peak = peak + (true_range * tcm)
-
-    if close < significant_inval and low_close
-        trend := 'Bearish'
-        to_bearish()
-
-    else if close > significant_peak and high_close
-        to_bullish()
-    
-    else
-        trend := 'Sideways'
-
-else if trend == 'Bearish'
-    significant_inval = inval + (true_range * tcm)
-    significant_peak = peak - (true_range * tcm)
-
-    if close > significant_inval and high_close
-        trend := 'Bullish'
-        to_bullish()
-
-    else if close < significant_peak and low_close
-        to_bearish()
-
-    else
-        trend := 'Sideways'
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------ Plots
 //------------------------------------------------------------------------------
 
-barclr = trend == 'Sideways' ? color.gray : trend == 'Bullish' ? color.green : color.red
+barclr = bullish_impulse ? color.lime : bearish_impulse ? color.red : color.gray
 barcolor(barclr)
 
-// Temporary for Debug
-plot(peak, color=color.green)
-plot(inval, color=color.red)
-
-fast_avg = plot(fast, color = color.silver)
-slow_avg = plot(slow, color = color.white)
-fill_clr = fast > slow ? color.new(color.green, 75) : color.new(color.red, 75)
+fast_avg = plot(fast, color = color.new(color.yellow, 100))
+slow_avg = plot(slow, color = color.new(color.orange, 100))
+fill_clr = fast > slow ? color.new(color.lime, 25) : color.new(color.red, 75)
 fill(fast_avg, slow_avg, color = fill_clr)
