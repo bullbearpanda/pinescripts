@@ -25,8 +25,19 @@ atr = ta.atr(10)
 //---------------------------------------------------------------------- Utility
 //------------------------------------------------------------------------------
 
+rel_size (val, rel, crit) =>
+    val < (crit * rel)
 
+is_fullbody (o, h, l, c, crit) =>
+    bull_candle = c > o
+    bear_candle = c < o
+    candle_range = h - l
 
+    if bull_candle
+        rel_size(h - c, candle_range, crit) and rel_size(o - l, candle_range, crit)
+    else if bear_candle
+        rel_size(c - l, candle_range, crit) and rel_size(h - o, candle_range, crit)
+        
 //------------------------------------------------------------------------------
 //-------------------------------------------------------------- Candle Analysis
 //------------------------------------------------------------------------------
@@ -38,23 +49,39 @@ high_close = close <= high and (high - candle_range) < close
 low_close = close >= low and (low + candle_range) > close
 mid_close = (high - candle_range) > close and (low + candle_range) < close
 
-bullish_impulse = high_close and significant_candle
-bearish_impulse = low_close and significant_candle
-
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------ Trend Logic
 //------------------------------------------------------------------------------
 
-
+bullish_impulse = high_close and significant_candle and is_fullbody(open, high, low, close, 0.2)
+bearish_impulse = low_close and significant_candle and is_fullbody(open, high, low, close, 0.2)
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------ Plots
 //------------------------------------------------------------------------------
 
-barclr = bullish_impulse ? color.lime : bearish_impulse ? color.red : color.gray
+var line line_mid = na
+var line line_base = na
+
+if bullish_impulse or bearish_impulse
+    mid_point = ((high - low) / 2) + low
+    candle_clr = bullish_impulse ? color.lime : color.red
+
+    if not na(line_mid)
+        line_mid.set_extend(extend.none)
+        line_mid.set_x2(bar_index)
+    line_mid := line.new(bar_index, mid_point, bar_index + 1, mid_point, extend = extend.right, color = candle_clr, style = line.style_dashed, width = 1)
+
+    if not na(line_base)
+        line_base.set_extend(extend.none)
+        line_base.set_x2(bar_index)
+    line_base := line.new(bar_index, open, bar_index + 1, open, extend = extend.right, color = candle_clr, style = line.style_solid, width = 1)
+
+bullbearclr = close > open ? color.white : color.gray
+barclr = bullish_impulse ? color.lime : bearish_impulse ? color.red : bullbearclr
 barcolor(barclr)
 
 fast_avg = plot(fast, color = color.new(color.yellow, 100))
 slow_avg = plot(slow, color = color.new(color.orange, 100))
-fill_clr = fast > slow ? color.new(color.lime, 25) : color.new(color.red, 75)
+fill_clr = fast > slow ? color.new(color.lime, 75) : color.new(color.red, 75)
 fill(fast_avg, slow_avg, color = fill_clr)
